@@ -1,0 +1,48 @@
+{
+  "name": "print-setu",
+  "version": "1.0.0",
+  "description": "WebSocket-based printer SDK for browser-to-printer communication without USB drivers",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc && tsc --module esnext --outDir dist/esm",
+    "prepublishOnly": "npm run build",
+    "test": "jest",
+    "lint": "eslint src --ext .ts"
+  },
+  "keywords": [
+    "printer",
+    "websocket",
+    "thermal-printer",
+    "pos",
+    "usb-printer",
+    "browser-printing",
+    "offline-printing"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/print-setu"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/print-setu/issues"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "jest": "^29.0.0",
+    "@types/jest": "^29.0.0",
+    "eslint": "^8.0.0"
+  },
+  "peerDependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
