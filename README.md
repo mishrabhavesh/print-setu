@@ -25,7 +25,7 @@ yarn add print-setu
 ## Quick Start
 
 ```typescript
-import { createPrinterService } from '@yourorg/printer-websocket-sdk';
+import { createPrinterService } from '@mishrabhavesh/print-setu';
 
 // Initialize the service
 const printerService = createPrinterService({
@@ -56,7 +56,7 @@ await printerService.print('printer-id', base64Data);
 ### Initialization
 
 ```typescript
-import { PrinterService } from '@yourorg/printer-websocket-sdk';
+import { PrinterService } from '@mishrabhavesh/print-setu';
 
 const service = new PrinterService({
   apiKey: string;              // Required: Your API key
@@ -132,7 +132,7 @@ printerService.on('ERROR', (data) => {
 
 ```typescript
 import { useEffect, useState } from 'react';
-import { createPrinterService, PrinterDevice } from '@yourorg/printer-websocket-sdk';
+import { createPrinterService, PrinterDevice } from '@mishrabhavesh/print-setu';
 
 function PrinterComponent() {
   const [printers, setPrinters] = useState([]);
@@ -189,7 +189,7 @@ function PrinterComponent() {
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { createPrinterService } from '@yourorg/printer-websocket-sdk';
+import { createPrinterService } from '@mishrabhavesh/print-setu';
 
 const printers = ref([]);
 const service = createPrinterService({
@@ -231,15 +231,11 @@ const print = async (printerId) => {
 - Safari 14+
 - Opera 74+
 
-## License
-
-MIT © [Your Name]
-
 ## Support
 
 For issues and questions:
-- GitHub Issues: https://github.com/yourorg/printer-websocket-sdk/issues
-- Documentation: https://docs.yoursite.com
+- GitHub Issues: https://github.com/mishrabhavesh/print-setu/issues
+- Documentation: TODO
 
 ## Contributing
 
