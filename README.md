@@ -6,11 +6,12 @@ A lightweight, browser-compatible SDK for connecting to USB printers via WebSock
 <img width="100%" alt="20251225_1745_Dynamic Connection Glow_simple_compose_01kdapyfqwf7fb8ngthzx506gk" src="https://github.com/user-attachments/assets/b3463f48-a574-40f3-aebb-077a813278d8" />
 
 
-## Demo URL
-  https://demo-print-setu.vercel.app/
+## Links
 
-## Windows Build
-  https://drive.google.com/file/d/15b-45-tsKLBB1MFhREr8aoA0e7ylhFSK/view?usp=sharing
+**Website:** https://printsetu.dev  
+**Demo:** https://demo.printsetu.dev  
+**Windows Build:** https://drive.google.com/file/d/15b-45-tsKLBB1MFhREr8aoA0e7ylhFSK/view?usp=sharing
+
 ## Features
 
 ✅ **No USB Drivers Required** - Print directly from browser to USB printers  
@@ -625,4 +626,4 @@ For issues and questions:
 
 ## Contributing
 
-Contributions are welcome! Please read our contributing guidelines before submitting PRs.
+Contributions are welcome!
