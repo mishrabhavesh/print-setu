@@ -2,7 +2,6 @@ import { PrinterConfig, PrinterDevice, MessageHandler, PrintOptions } from './ty
 export declare class PrinterService {
     private socket;
     private url;
-    private apiKey;
     private reconnectAttempts;
     private maxReconnectAttempts;
     private reconnectDelay;

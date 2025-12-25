@@ -1,6 +1,5 @@
 export interface PrinterConfig {
   url?: string;
-  apiKey: string;
   maxReconnectAttempts?: number;
   reconnectDelay?: number;
   enableLogging?: boolean;

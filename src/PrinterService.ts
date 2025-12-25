@@ -15,7 +15,6 @@ import {
 export class PrinterService {
   private socket: WebSocket | null = null;
   private url: string;
-  private apiKey: string;
   private reconnectAttempts = 0;
   private maxReconnectAttempts: number;
   private reconnectDelay: number;
@@ -25,11 +24,6 @@ export class PrinterService {
   private defaultTimeout: number;
 
   constructor(config: PrinterConfig) {
-    if (!config.apiKey) {
-      throw new Error('API key is required');
-    }
-
-    this.apiKey = config.apiKey;
     this.url = config.url || DEFAULT_WS_URL;
     this.maxReconnectAttempts = config.maxReconnectAttempts || DEFAULT_MAX_RECONNECT_ATTEMPTS;
     this.reconnectDelay = config.reconnectDelay || DEFAULT_RECONNECT_DELAY;
@@ -60,10 +54,8 @@ export class PrinterService {
           this.log('Connected to printer service');
           this.reconnectAttempts = 0;
           
-          // Authenticate with API key
           this.send({
             type: 'AUTH',
-            payload: { apiKey: this.apiKey },
           }).then(() => {
             // Wait a bit for auth to process
             setTimeout(() => {

@@ -40,7 +40,6 @@ import { PrinterService } from 'print-setu';
 // Initialize the service
 const printer = new PrinterService({
   url: 'ws://127.0.0.1:8899',
-  apiKey: 'your-api-key-here'
 });
 
 // Connect to the service
@@ -86,7 +85,6 @@ import { PrinterService } from 'print-setu';
 
 const printer = new PrinterService({
   url: string;                 // Required: WebSocket URL (e.g., 'ws://127.0.0.1:8899')
-  apiKey: string;              // Required: Your API key
   maxReconnectAttempts?: number; // Optional: Max reconnection attempts (default: 5)
   reconnectDelay?: number;     // Optional: Delay between reconnects in ms (default: 2000)
   enableLogging?: boolean;     // Optional: Enable console logging (default: true)
@@ -245,7 +243,6 @@ import { PrinterService } from 'print-setu';
 
 const printer = new PrinterService({ 
   url: 'ws://127.0.0.1:8899', 
-  apiKey: "your-api-key" 
 });
 
 export function usePrinter() {
@@ -528,7 +525,6 @@ const connectedPrinter = ref(null);
 
 const printer = new PrinterService({
   url: 'ws://127.0.0.1:8899',
-  apiKey: import.meta.env.VITE_PRINTER_API_KEY
 });
 
 onMounted(async () => {

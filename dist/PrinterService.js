@@ -8,10 +8,6 @@ class PrinterService {
         this.reconnectAttempts = 0;
         this.messageHandlers = new Map();
         this.connectionPromise = null;
-        if (!config.apiKey) {
-            throw new Error('API key is required');
-        }
-        this.apiKey = config.apiKey;
         this.url = config.url || constants_1.DEFAULT_WS_URL;
         this.maxReconnectAttempts = config.maxReconnectAttempts || constants_1.DEFAULT_MAX_RECONNECT_ATTEMPTS;
         this.reconnectDelay = config.reconnectDelay || constants_1.DEFAULT_RECONNECT_DELAY;
@@ -36,10 +32,8 @@ class PrinterService {
                 this.socket.onopen = () => {
                     this.log('Connected to printer service');
                     this.reconnectAttempts = 0;
-                    // Authenticate with API key
                     this.send({
                         type: 'AUTH',
-                        payload: { apiKey: this.apiKey },
                     }).then(() => {
                         // Wait a bit for auth to process
                         setTimeout(() => {
