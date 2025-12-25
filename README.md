@@ -10,7 +10,7 @@ A lightweight, browser-compatible SDK for connecting to USB printers via WebSock
 
 **Website:** https://printsetu.dev  
 **Demo:** https://demo.printsetu.dev  
-**Windows Build:** https://drive.google.com/file/d/15b-45-tsKLBB1MFhREr8aoA0e7ylhFSK/view?usp=sharing
+**Windows Build:** https://drive.google.com/drive/folders/1odBnoRzXz_Q4cKpnvWNxoPfzxcjZkPeq?usp=sharing
 
 ## Features
 
