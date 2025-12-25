@@ -1,0 +1,153 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PrinterService = void 0;
+const constants_1 = require("./constants");
+class PrinterService {
+    constructor(config) {
+        this.socket = null;
+        this.reconnectAttempts = 0;
+        this.messageHandlers = new Map();
+        this.connectionPromise = null;
+        if (!config.apiKey) {
+            throw new Error('API key is required');
+        }
+        this.apiKey = config.apiKey;
+        this.url = config.url || constants_1.DEFAULT_WS_URL;
+        this.maxReconnectAttempts = config.maxReconnectAttempts || constants_1.DEFAULT_MAX_RECONNECT_ATTEMPTS;
+        this.reconnectDelay = config.reconnectDelay || constants_1.DEFAULT_RECONNECT_DELAY;
+        this.enableLogging = config.enableLogging ?? true;
+    }
+    log(message, ...args) {
+        if (this.enableLogging) {
+            console.log(`[PrinterSDK] ${message}`, ...args);
+        }
+    }
+    async connect() {
+        if (this.socket?.readyState === WebSocket.OPEN) {
+            return Promise.resolve();
+        }
+        if (this.connectionPromise) {
+            return this.connectionPromise;
+        }
+        this.connectionPromise = new Promise((resolve, reject) => {
+            try {
+                this.socket = new WebSocket(this.url);
+                this.socket.onopen = () => {
+                    this.log('Connected to printer service');
+                    this.reconnectAttempts = 0;
+                    this.connectionPromise = null;
+                    // Authenticate with API key
+                    this.send({
+                        type: 'AUTH',
+                        payload: { apiKey: this.apiKey },
+                    });
+                    resolve();
+                };
+                this.socket.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        this.handleMessage(data);
+                    }
+                    catch (err) {
+                        console.error('Failed to parse message:', err);
+                    }
+                };
+                this.socket.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    this.connectionPromise = null;
+                    reject(error);
+                };
+                this.socket.onclose = () => {
+                    this.log('Disconnected from printer service');
+                    this.connectionPromise = null;
+                    this.attemptReconnect();
+                };
+            }
+            catch (err) {
+                this.connectionPromise = null;
+                reject(err);
+            }
+        });
+        return this.connectionPromise;
+    }
+    attemptReconnect() {
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.reconnectAttempts++;
+            this.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+            setTimeout(() => {
+                this.connect().catch((err) => console.error('Reconnection failed:', err));
+            }, this.reconnectDelay);
+        }
+    }
+    on(type, handler) {
+        if (!this.messageHandlers.has(type)) {
+            this.messageHandlers.set(type, new Set());
+        }
+        this.messageHandlers.get(type).add(handler);
+        return () => {
+            const handlers = this.messageHandlers.get(type);
+            if (handlers) {
+                handlers.delete(handler);
+            }
+        };
+    }
+    handleMessage(data) {
+        const handlers = this.messageHandlers.get(data.type);
+        if (handlers) {
+            handlers.forEach((handler) => handler(data));
+        }
+    }
+    async send(message) {
+        await this.connect();
+        if (this.socket?.readyState === WebSocket.OPEN) {
+            this.socket.send(JSON.stringify(message));
+        }
+        else {
+            throw new Error('WebSocket is not connected');
+        }
+    }
+    async scanPrinters() {
+        return this.send({
+            type: constants_1.MESSAGE_TYPES.SEARCH_USB_PRINTERS,
+        });
+    }
+    async connectPrinter(printerId) {
+        return this.send({
+            type: constants_1.MESSAGE_TYPES.CONNECT_PRINTER,
+            payload: { printerId },
+        });
+    }
+    async disconnectPrinter(printerId) {
+        return this.send({
+            type: constants_1.MESSAGE_TYPES.DISCONNECT_PRINTER,
+            payload: { printerId },
+        });
+    }
+    async print(printerId, base64Data, options) {
+        return this.send({
+            type: constants_1.MESSAGE_TYPES.PRINT_DATA,
+            payload: {
+                printerId,
+                data: base64Data,
+                ...options,
+            },
+        });
+    }
+    async getState() {
+        return this.send({
+            type: constants_1.MESSAGE_TYPES.GET_STATE,
+        });
+    }
+    disconnect() {
+        if (this.socket) {
+            this.socket.close();
+            this.socket = null;
+        }
+        this.messageHandlers.clear();
+    }
+    isConnected() {
+        return this.socket?.readyState === WebSocket.OPEN;
+    }
+}
+exports.PrinterService = PrinterService;
+//# sourceMappingURL=PrinterService.js.map

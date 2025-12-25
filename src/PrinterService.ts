@@ -19,8 +19,8 @@ export class PrinterService {
   private reconnectAttempts = 0;
   private maxReconnectAttempts: number;
   private reconnectDelay: number;
-  private messageHandlers = new Map>();
-  private connectionPromise: Promise | null = null;
+  private messageHandlers = new Map<string, Set<MessageHandler>>();
+  private connectionPromise: Promise<void> | null = null;
   private enableLogging: boolean;
 
   constructor(config: PrinterConfig) {
@@ -41,7 +41,7 @@ export class PrinterService {
     }
   }
 
-  async connect(): Promise {
+  async connect(): Promise<void> {
     if (this.socket?.readyState === WebSocket.OPEN) {
       return Promise.resolve();
     }
@@ -50,7 +50,7 @@ export class PrinterService {
       return this.connectionPromise;
     }
 
-    this.connectionPromise = new Promise((resolve, reject) => {
+    this.connectionPromise = new Promise<void>((resolve, reject) => {
       try {
         this.socket = new WebSocket(this.url);
 
@@ -113,7 +113,7 @@ export class PrinterService {
 
   on(type: string, handler: MessageHandler): () => void {
     if (!this.messageHandlers.has(type)) {
-      this.messageHandlers.set(type, new Set());
+      this.messageHandlers.set(type, new Set<MessageHandler>());
     }
     this.messageHandlers.get(type)!.add(handler);
 
@@ -132,7 +132,7 @@ export class PrinterService {
     }
   }
 
-  private async send(message: PrinterMessage): Promise {
+  private async send(message: PrinterMessage): Promise<void> {
     await this.connect();
 
     if (this.socket?.readyState === WebSocket.OPEN) {
@@ -142,20 +142,20 @@ export class PrinterService {
     }
   }
 
-  async scanPrinters(): Promise {
+  async scanPrinters(): Promise<void> {
     return this.send({
       type: MESSAGE_TYPES.SEARCH_USB_PRINTERS,
     });
   }
 
-  async connectPrinter(printerId: string): Promise {
+  async connectPrinter(printerId: string): Promise<void> {
     return this.send({
       type: MESSAGE_TYPES.CONNECT_PRINTER,
       payload: { printerId },
     });
   }
 
-  async disconnectPrinter(printerId: string): Promise {
+  async disconnectPrinter(printerId: string): Promise<void> {
     return this.send({
       type: MESSAGE_TYPES.DISCONNECT_PRINTER,
       payload: { printerId },
@@ -166,7 +166,7 @@ export class PrinterService {
     printerId: string,
     base64Data: string,
     options?: PrintOptions
-  ): Promise {
+  ): Promise<void> {
     return this.send({
       type: MESSAGE_TYPES.PRINT_DATA,
       payload: {
@@ -177,7 +177,7 @@ export class PrinterService {
     });
   }
 
-  async getState(): Promise {
+  async getState(): Promise<void> {
     return this.send({
       type: MESSAGE_TYPES.GET_STATE,
     });
