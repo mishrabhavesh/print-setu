@@ -53,7 +53,7 @@ export class PrinterService {
         this.socket.onopen = () => {
           this.log('Connected to printer service');
           this.reconnectAttempts = 0;
-          
+
           this.send({
             type: 'AUTH',
           }).then(() => {
@@ -128,7 +128,7 @@ export class PrinterService {
     if (handlers) {
       handlers.forEach((handler) => handler(data));
     }
-    
+
     // Also trigger generic 'message' event for all messages
     const allHandlers = this.messageHandlers.get('*');
     if (allHandlers) {
@@ -154,8 +154,8 @@ export class PrinterService {
   ): Promise<T> {
     return new Promise((resolve, reject) => {
       let cleanupSuccess: () => void;
-      let cleanupError: () => void = () => {};
-      
+      let cleanupError: () => void = () => { };
+
       const timeoutId = setTimeout(() => {
         cleanupSuccess();
         cleanupError();
@@ -168,7 +168,7 @@ export class PrinterService {
         clearTimeout(timeoutId);
         cleanupSuccess();
         cleanupError();
-        
+
         if (data.error) {
           reject(new Error(data.error));
         } else {
@@ -257,6 +257,20 @@ export class PrinterService {
 
     return await responsePromise;
   }
+
+  async ping(timeout = 3000): Promise<boolean> {
+    const responsePromise = this.waitForResponse<null>(
+      MESSAGE_TYPES.PONG,
+      undefined,
+      timeout
+    );
+
+    await this.send({ type: MESSAGE_TYPES.PING });
+
+    await responsePromise;
+    return true;
+  }
+
 
   async getState(): Promise<any> {
     // Set up listener BEFORE sending message

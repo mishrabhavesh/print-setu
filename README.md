@@ -103,6 +103,9 @@ await printer.connect();
 #### `scanPrinters(): Promise<void>`
 Scans for available USB printers. Listen to `USB_PRINTERS_RESULT` event for results.
 
+#### `ping(): Promise<void>`
+Check if electron app is running or not.
+
 ```typescript
 await printer.scanPrinters();
 ```
