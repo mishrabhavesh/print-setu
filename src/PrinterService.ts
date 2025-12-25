@@ -59,20 +59,24 @@ export class PrinterService {
         this.socket.onopen = () => {
           this.log('Connected to printer service');
           this.reconnectAttempts = 0;
-          this.connectionPromise = null;
           
           // Authenticate with API key
           this.send({
             type: 'AUTH',
             payload: { apiKey: this.apiKey },
-          });
-          
-          resolve();
+          }).then(() => {
+            // Wait a bit for auth to process
+            setTimeout(() => {
+              this.connectionPromise = null;
+              resolve();
+            }, 100);
+          }).catch(reject);
         };
 
         this.socket.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
+            this.log('Received message:', data);
             this.handleMessage(data);
           } catch (err) {
             console.error('Failed to parse message:', err);
@@ -132,6 +136,12 @@ export class PrinterService {
     if (handlers) {
       handlers.forEach((handler) => handler(data));
     }
+    
+    // Also trigger generic 'message' event for all messages
+    const allHandlers = this.messageHandlers.get('*');
+    if (allHandlers) {
+      allHandlers.forEach((handler) => handler(data));
+    }
   }
 
   private async send(message: PrinterMessage): Promise<void> {
@@ -139,6 +149,7 @@ export class PrinterService {
 
     if (this.socket?.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify(message));
+      this.log('Sent message:', message);
     } else {
       throw new Error('WebSocket is not connected');
     }
@@ -150,13 +161,18 @@ export class PrinterService {
     timeout: number = this.defaultTimeout
   ): Promise<T> {
     return new Promise((resolve, reject) => {
+      let cleanupSuccess: () => void;
+      let cleanupError: () => void = () => {};
+      
       const timeoutId = setTimeout(() => {
         cleanupSuccess();
         cleanupError();
         reject(new Error(`Request timeout: No response received for ${responseType}`));
       }, timeout);
 
-      const cleanupSuccess = this.on(responseType, (data) => {
+      // Set up success listener
+      cleanupSuccess = this.on(responseType, (data) => {
+        this.log(`Response received for ${responseType}:`, data);
         clearTimeout(timeoutId);
         cleanupSuccess();
         cleanupError();
@@ -168,9 +184,10 @@ export class PrinterService {
         }
       });
 
-      let cleanupError = () => {};
+      // Set up error listener if provided
       if (errorType) {
         cleanupError = this.on(errorType, (data) => {
+          this.log(`Error received for ${errorType}:`, data);
           clearTimeout(timeoutId);
           cleanupSuccess();
           cleanupError();
@@ -181,11 +198,13 @@ export class PrinterService {
   }
 
   async scanPrinters(): Promise<PrinterDevice[]> {
+    // Set up listener BEFORE sending message
     const responsePromise = this.waitForResponse<{ printers: PrinterDevice[] }>(
       'PRINTERS_FOUND',
       'SCAN_ERROR'
     );
 
+    // Now send the request
     await this.send({
       type: MESSAGE_TYPES.SEARCH_USB_PRINTERS,
     });
@@ -195,6 +214,7 @@ export class PrinterService {
   }
 
   async connectPrinter(printerId: string): Promise<{ success: boolean; message?: string }> {
+    // Set up listener BEFORE sending message
     const responsePromise = this.waitForResponse<{ success: boolean; message?: string }>(
       'PRINTER_CONNECTED',
       'PRINTER_CONNECT_ERROR'
@@ -209,6 +229,7 @@ export class PrinterService {
   }
 
   async disconnectPrinter(printerId: string): Promise<{ success: boolean; message?: string }> {
+    // Set up listener BEFORE sending message
     const responsePromise = this.waitForResponse<{ success: boolean; message?: string }>(
       'PRINTER_DISCONNECTED',
       'PRINTER_DISCONNECT_ERROR'
@@ -227,6 +248,7 @@ export class PrinterService {
     base64Data: string,
     options?: PrintOptions
   ): Promise<{ success: boolean; jobId?: string; message?: string }> {
+    // Set up listener BEFORE sending message
     const responsePromise = this.waitForResponse<{ success: boolean; jobId?: string; message?: string }>(
       'PRINT_SUCCESS',
       'PRINT_ERROR'
@@ -245,6 +267,7 @@ export class PrinterService {
   }
 
   async getState(): Promise<any> {
+    // Set up listener BEFORE sending message
     const responsePromise = this.waitForResponse<any>(
       'STATE_RESPONSE',
       'STATE_ERROR'
