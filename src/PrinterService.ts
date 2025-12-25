@@ -22,6 +22,7 @@ export class PrinterService {
   private messageHandlers = new Map<string, Set<MessageHandler>>();
   private connectionPromise: Promise<void> | null = null;
   private enableLogging: boolean;
+  private defaultTimeout: number;
 
   constructor(config: PrinterConfig) {
     if (!config.apiKey) {
@@ -33,6 +34,7 @@ export class PrinterService {
     this.maxReconnectAttempts = config.maxReconnectAttempts || DEFAULT_MAX_RECONNECT_ATTEMPTS;
     this.reconnectDelay = config.reconnectDelay || DEFAULT_RECONNECT_DELAY;
     this.enableLogging = config.enableLogging ?? true;
+    this.defaultTimeout = 10000; // 10 seconds default timeout
   }
 
   private log(message: string, ...args: any[]): void {
@@ -136,38 +138,101 @@ export class PrinterService {
     await this.connect();
 
     if (this.socket?.readyState === WebSocket.OPEN) {
-      return this.socket.send(JSON.stringify(message));
+      this.socket.send(JSON.stringify(message));
     } else {
       throw new Error('WebSocket is not connected');
     }
   }
 
-  async scanPrinters(): Promise<void> {
-    return this.send({
-      type: MESSAGE_TYPES.SEARCH_USB_PRINTERS,
+  private waitForResponse<T>(
+    responseType: string,
+    errorType?: string,
+    timeout: number = this.defaultTimeout
+  ): Promise<T> {
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        cleanupSuccess();
+        cleanupError();
+        reject(new Error(`Request timeout: No response received for ${responseType}`));
+      }, timeout);
+
+      const cleanupSuccess = this.on(responseType, (data) => {
+        clearTimeout(timeoutId);
+        cleanupSuccess();
+        cleanupError();
+        
+        if (data.error) {
+          reject(new Error(data.error));
+        } else {
+          resolve(data.payload as T);
+        }
+      });
+
+      let cleanupError = () => {};
+      if (errorType) {
+        cleanupError = this.on(errorType, (data) => {
+          clearTimeout(timeoutId);
+          cleanupSuccess();
+          cleanupError();
+          reject(new Error(data.payload?.message || data.error || 'Operation failed'));
+        });
+      }
     });
   }
 
-  async connectPrinter(printerId: string): Promise<void> {
-    return this.send({
+  async scanPrinters(): Promise<PrinterDevice[]> {
+    const responsePromise = this.waitForResponse<{ printers: PrinterDevice[] }>(
+      'PRINTERS_FOUND',
+      'SCAN_ERROR'
+    );
+
+    await this.send({
+      type: MESSAGE_TYPES.SEARCH_USB_PRINTERS,
+    });
+
+    const response = await responsePromise;
+    return response.printers || [];
+  }
+
+  async connectPrinter(printerId: string): Promise<{ success: boolean; message?: string }> {
+    const responsePromise = this.waitForResponse<{ success: boolean; message?: string }>(
+      'PRINTER_CONNECTED',
+      'PRINTER_CONNECT_ERROR'
+    );
+
+    await this.send({
       type: MESSAGE_TYPES.CONNECT_PRINTER,
       payload: { printerId },
     });
+
+    return await responsePromise;
   }
 
-  async disconnectPrinter(printerId: string): Promise<void> {
-    return this.send({
+  async disconnectPrinter(printerId: string): Promise<{ success: boolean; message?: string }> {
+    const responsePromise = this.waitForResponse<{ success: boolean; message?: string }>(
+      'PRINTER_DISCONNECTED',
+      'PRINTER_DISCONNECT_ERROR'
+    );
+
+    await this.send({
       type: MESSAGE_TYPES.DISCONNECT_PRINTER,
       payload: { printerId },
     });
+
+    return await responsePromise;
   }
 
   async print(
     printerId: string,
     base64Data: string,
     options?: PrintOptions
-  ): Promise<void> {
-    return this.send({
+  ): Promise<{ success: boolean; jobId?: string; message?: string }> {
+    const responsePromise = this.waitForResponse<{ success: boolean; jobId?: string; message?: string }>(
+      'PRINT_SUCCESS',
+      'PRINT_ERROR'
+    );
+
+    await this.send({
       type: MESSAGE_TYPES.PRINT_DATA,
       payload: {
         printerId,
@@ -175,12 +240,21 @@ export class PrinterService {
         ...options,
       },
     });
+
+    return await responsePromise;
   }
 
-  async getState(): Promise<void> {
-    return this.send({
+  async getState(): Promise<any> {
+    const responsePromise = this.waitForResponse<any>(
+      'STATE_RESPONSE',
+      'STATE_ERROR'
+    );
+
+    await this.send({
       type: MESSAGE_TYPES.GET_STATE,
     });
+
+    return await responsePromise;
   }
 
   disconnect(): void {
