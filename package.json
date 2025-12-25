@@ -29,10 +29,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yourusername/print-setu.git"
+    "url": "https://github.com/mishrabhavesh/print-setu"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/print-setu/issues"
+    "url": "https://github.com/mishrabhavesh/print-setu/issues"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
