@@ -1,6 +1,6 @@
 {
   "name": "print-setu",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "WebSocket-based printer SDK for browser-to-printer communication without USB drivers",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
