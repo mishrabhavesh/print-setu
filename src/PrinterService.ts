@@ -136,7 +136,7 @@ export class PrinterService {
     await this.connect();
 
     if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify(message));
+      return this.socket.send(JSON.stringify(message));
     } else {
       throw new Error('WebSocket is not connected');
     }
