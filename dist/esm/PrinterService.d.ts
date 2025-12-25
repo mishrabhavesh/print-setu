@@ -1,4 +1,4 @@
-import { PrinterConfig, MessageHandler, PrintOptions } from './types';
+import { PrinterConfig, PrinterDevice, MessageHandler, PrintOptions } from './types';
 export declare class PrinterService {
     private socket;
     private url;
@@ -9,6 +9,7 @@ export declare class PrinterService {
     private messageHandlers;
     private connectionPromise;
     private enableLogging;
+    private defaultTimeout;
     constructor(config: PrinterConfig);
     private log;
     connect(): Promise<void>;
@@ -16,11 +17,22 @@ export declare class PrinterService {
     on(type: string, handler: MessageHandler): () => void;
     private handleMessage;
     private send;
-    scanPrinters(): Promise<void>;
-    connectPrinter(printerId: string): Promise<void>;
-    disconnectPrinter(printerId: string): Promise<void>;
-    print(printerId: string, base64Data: string, options?: PrintOptions): Promise<void>;
-    getState(): Promise<void>;
+    private waitForResponse;
+    scanPrinters(): Promise<PrinterDevice[]>;
+    connectPrinter(printerId: string): Promise<{
+        success: boolean;
+        message?: string;
+    }>;
+    disconnectPrinter(printerId: string): Promise<{
+        success: boolean;
+        message?: string;
+    }>;
+    print(printerId: string, base64Data: string, options?: PrintOptions): Promise<{
+        success: boolean;
+        jobId?: string;
+        message?: string;
+    }>;
+    getState(): Promise<any>;
     disconnect(): void;
     isConnected(): boolean;
 }

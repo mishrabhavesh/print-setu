@@ -13,6 +13,7 @@ export class PrinterService {
         this.maxReconnectAttempts = config.maxReconnectAttempts || DEFAULT_MAX_RECONNECT_ATTEMPTS;
         this.reconnectDelay = config.reconnectDelay || DEFAULT_RECONNECT_DELAY;
         this.enableLogging = config.enableLogging ?? true;
+        this.defaultTimeout = 10000; // 10 seconds default timeout
     }
     log(message, ...args) {
         if (this.enableLogging) {
@@ -32,17 +33,22 @@ export class PrinterService {
                 this.socket.onopen = () => {
                     this.log('Connected to printer service');
                     this.reconnectAttempts = 0;
-                    this.connectionPromise = null;
                     // Authenticate with API key
                     this.send({
                         type: 'AUTH',
                         payload: { apiKey: this.apiKey },
-                    });
-                    resolve();
+                    }).then(() => {
+                        // Wait a bit for auth to process
+                        setTimeout(() => {
+                            this.connectionPromise = null;
+                            resolve();
+                        }, 100);
+                    }).catch(reject);
                 };
                 this.socket.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
+                        this.log('Received message:', data);
                         this.handleMessage(data);
                     }
                     catch (err) {
@@ -93,35 +99,88 @@ export class PrinterService {
         if (handlers) {
             handlers.forEach((handler) => handler(data));
         }
+        // Also trigger generic 'message' event for all messages
+        const allHandlers = this.messageHandlers.get('*');
+        if (allHandlers) {
+            allHandlers.forEach((handler) => handler(data));
+        }
     }
     async send(message) {
         await this.connect();
         if (this.socket?.readyState === WebSocket.OPEN) {
             this.socket.send(JSON.stringify(message));
+            this.log('Sent message:', message);
         }
         else {
             throw new Error('WebSocket is not connected');
         }
     }
-    async scanPrinters() {
-        return this.send({
-            type: MESSAGE_TYPES.SEARCH_USB_PRINTERS,
+    waitForResponse(responseType, errorType, timeout = this.defaultTimeout) {
+        return new Promise((resolve, reject) => {
+            let cleanupSuccess;
+            let cleanupError = () => { };
+            const timeoutId = setTimeout(() => {
+                cleanupSuccess();
+                cleanupError();
+                reject(new Error(`Request timeout: No response received for ${responseType}`));
+            }, timeout);
+            // Set up success listener
+            cleanupSuccess = this.on(responseType, (data) => {
+                this.log(`Response received for ${responseType}:`, data);
+                clearTimeout(timeoutId);
+                cleanupSuccess();
+                cleanupError();
+                if (data.error) {
+                    reject(new Error(data.error));
+                }
+                else {
+                    resolve(data.payload);
+                }
+            });
+            // Set up error listener if provided
+            if (errorType) {
+                cleanupError = this.on(errorType, (data) => {
+                    this.log(`Error received for ${errorType}:`, data);
+                    clearTimeout(timeoutId);
+                    cleanupSuccess();
+                    cleanupError();
+                    reject(new Error(data.payload?.message || data.error || 'Operation failed'));
+                });
+            }
         });
     }
+    async scanPrinters() {
+        // Set up listener BEFORE sending message
+        const responsePromise = this.waitForResponse('PRINTERS_FOUND', 'SCAN_ERROR');
+        // Now send the request
+        await this.send({
+            type: MESSAGE_TYPES.SEARCH_USB_PRINTERS,
+        });
+        const response = await responsePromise;
+        return response.printers || [];
+    }
     async connectPrinter(printerId) {
-        return this.send({
+        // Set up listener BEFORE sending message
+        const responsePromise = this.waitForResponse('PRINTER_CONNECTED', 'PRINTER_CONNECT_ERROR');
+        await this.send({
             type: MESSAGE_TYPES.CONNECT_PRINTER,
             payload: { printerId },
         });
+        return await responsePromise;
     }
     async disconnectPrinter(printerId) {
-        return this.send({
+        // Set up listener BEFORE sending message
+        const responsePromise = this.waitForResponse('PRINTER_DISCONNECTED', 'PRINTER_DISCONNECT_ERROR');
+        await this.send({
             type: MESSAGE_TYPES.DISCONNECT_PRINTER,
             payload: { printerId },
         });
+        return await responsePromise;
     }
     async print(printerId, base64Data, options) {
-        return this.send({
+        // Set up listener BEFORE sending message
+        const responsePromise = this.waitForResponse('PRINT_SUCCESS', 'PRINT_ERROR');
+        await this.send({
             type: MESSAGE_TYPES.PRINT_DATA,
             payload: {
                 printerId,
@@ -129,11 +188,15 @@ export class PrinterService {
                 ...options,
             },
         });
+        return await responsePromise;
     }
     async getState() {
-        return this.send({
+        // Set up listener BEFORE sending message
+        const responsePromise = this.waitForResponse('STATE_RESPONSE', 'STATE_ERROR');
+        await this.send({
             type: MESSAGE_TYPES.GET_STATE,
         });
+        return await responsePromise;
     }
     disconnect() {
         if (this.socket) {
