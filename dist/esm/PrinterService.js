@@ -184,6 +184,12 @@ export class PrinterService {
         });
         return await responsePromise;
     }
+    async ping(timeout = 3000) {
+        const responsePromise = this.waitForResponse(MESSAGE_TYPES.PONG, undefined, timeout);
+        await this.send({ type: MESSAGE_TYPES.PING });
+        await responsePromise;
+        return true;
+    }
     async getState() {
         // Set up listener BEFORE sending message
         const responsePromise = this.waitForResponse('STATE_RESPONSE', 'STATE_ERROR');

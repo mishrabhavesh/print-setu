@@ -7,5 +7,7 @@ export const MESSAGE_TYPES = {
     DISCONNECT_PRINTER: 'DISCONNECT_PRINTER',
     PRINT_DATA: 'PRINT_DATA',
     GET_STATE: 'GET_STATE',
+    PING: 'PING',
+    PONG: 'PONG',
 };
 //# sourceMappingURL=constants.js.map

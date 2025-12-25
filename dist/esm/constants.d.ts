@@ -7,5 +7,7 @@ export declare const MESSAGE_TYPES: {
     readonly DISCONNECT_PRINTER: "DISCONNECT_PRINTER";
     readonly PRINT_DATA: "PRINT_DATA";
     readonly GET_STATE: "GET_STATE";
+    readonly PING: "PING";
+    readonly PONG: "PONG";
 };
 //# sourceMappingURL=constants.d.ts.map

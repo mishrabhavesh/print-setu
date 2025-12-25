@@ -31,6 +31,7 @@ export declare class PrinterService {
         jobId?: string;
         message?: string;
     }>;
+    ping(timeout?: number): Promise<boolean>;
     getState(): Promise<any>;
     disconnect(): void;
     isConnected(): boolean;
